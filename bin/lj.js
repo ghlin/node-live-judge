@@ -1,4 +1,4 @@
 #!/usr/bin/env node
 
-require '../live-judge'
+require('../live-judge')
 
