@@ -1,0 +1,21 @@
+{
+  "name": "local-judge",
+  "version": "1.0.0",
+  "description": "live-judge watches your c/c++ source files and judge them.",
+  "main": "live-judge.js",
+  "bin": {
+    "lj": "live-judge.js"
+  },
+  "keywords": [
+    "onlinejudge"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "chokidar": "^1.6.1",
+    "colors": "^1.1.2",
+    "commander": "^2.9.0",
+    "diff": "^3.2.0",
+    "underscore": "^1.8.3"
+  }
+}
