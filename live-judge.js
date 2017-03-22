@@ -139,13 +139,14 @@ extractTestings = function(options) {
   };
   result = _.reduce(options.concat([['in', void 0]]), reducer, [[], []]);
   testings = _.filter(result[0], function(x) {
-    return x[0][0] === 'in';
+    var ref;
+    return ((ref = x[0]) != null ? ref[0] : void 0) === 'in';
   });
   return _.map(testings, function(testCase) {
-    var ref;
+    var ref, ref1;
     return {
-      "in": testCase[0][1],
-      out: (ref = testCase[1]) != null ? ref[1] : void 0
+      "in": (ref = testCase[0]) != null ? ref[1] : void 0,
+      out: (ref1 = testCase[1]) != null ? ref1[1] : void 0
     };
   });
 };
@@ -161,7 +162,7 @@ groupOptions = function(options) {
 buildCompileArgs = function(optGroups, fullPath, defaultOutput) {
   var flags, output;
   if (defaultOutput == null) {
-    defaultOutput = fullPath + '.exec';
+    defaultOutput = fullPath + '.exe';
   }
   flags = (optGroups['compile'] || ['-std=c++1y']).join(' ');
   output = (optGroups['output'] || [defaultOutput])[0];
@@ -169,7 +170,7 @@ buildCompileArgs = function(optGroups, fullPath, defaultOutput) {
 };
 
 compileSync = function(optGroups, fullPath) {
-  var args, compileProcess, compilerOverride, output, ref, ref1;
+  var args, compileProcess, compilerOverride, output, ref, ref1, warnings;
   ref = buildCompileArgs(optGroups, fullPath), args = ref[0], output = ref[1];
   compilerOverride = (ref1 = optGroups['compiler']) != null ? ref1[0] : void 0;
   compilerOverride || (compilerOverride = compiler);
@@ -180,6 +181,13 @@ compileSync = function(optGroups, fullPath) {
     process.stdout.write('\n');
     return console.log(("*** at " + (new Date)).red);
   } else {
+    warnings = compileProcess.stderr.toString('utf-8');
+    if (warnings.length >= 3) {
+      console.log("*** Warnings:".yellow);
+      process.stdout.write(warnings);
+      process.stdout.write('\n');
+      console.log(("*** at " + (new Date)).yellow);
+    }
     return output;
   }
 };

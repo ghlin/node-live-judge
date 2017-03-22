@@ -142,9 +142,9 @@ extractTestings = (options) ->
 
   result = _.reduce (options.concat [['in', undefined]]), reducer, [[], []]
 
-  testings = _.filter result[0], (x) -> x[0][0] == 'in'
+  testings = _.filter result[0], (x) -> x[0]?[0] == 'in'
   _.map testings, (testCase) ->
-    in:  testCase[0][1]
+    in:  testCase[0]?[1]
     out: testCase[1]?[1]
 
 groupOptions = (options) ->
@@ -155,7 +155,7 @@ groupOptions = (options) ->
 # }}}
 
 
-buildCompileArgs = (optGroups, fullPath, defaultOutput = fullPath + '.exec') ->
+buildCompileArgs = (optGroups, fullPath, defaultOutput = fullPath + '.exe') ->
   flags     = (optGroups['compile'] or ['-std=c++1y']).join ' '
   output    = (optGroups['output']  or [defaultOutput])[0]
 
@@ -174,6 +174,14 @@ compileSync = (optGroups, fullPath) ->
     process.stdout.write '\n'
     console.log "*** at #{ new Date }".red
   else
+    warnings = compileProcess.stderr.toString 'utf-8'
+
+    if warnings.length >= 3 # magic!!!
+      console.log "*** Warnings:".yellow
+      process.stdout.write warnings
+      process.stdout.write '\n'
+      console.log "*** at #{ new Date }".yellow
+
     output
 
 runTestSync = (execPath, testInput, testOutput) ->
