@@ -1,6 +1,6 @@
 {
   "name": "local-judge",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "live-judge watches your c/c++ source files and judge them.",
   "main": "live-judge.js",
   "bin": {
