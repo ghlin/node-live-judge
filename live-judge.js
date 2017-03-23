@@ -19,9 +19,13 @@ program = require('commander');
 
 program.version('0.0.1').option('-c, --compiler [compiler]', 'set compiler', 'clang++').option('-w, --watchdir [dir]', 'watch dir', process.cwd()).parse(process.argv);
 
-compiler = program.compiler || 'g++';
+compiler = program.compiler;
 
-watchdir = program.watchdir || process.cwd();
+watchdir = program.watchdir;
+
+if (watchdir[watchdir.length - 1] === '/') {
+  watchdir = watchdir.slice(0, watchdir.length - 1);
+}
 
 extractOption = function(line) {
   var matches, pattern, ref;
@@ -42,7 +46,11 @@ extractOptionsFromLines = function(fullPath, lines) {
   var baseDir, fixPath, reduceResult, reducer;
   baseDir = path.dirname(fullPath);
   fixPath = function(file) {
-    return baseDir + '/' + file;
+    if (!path.isAbsolute) {
+      return baseDir + '/' + file;
+    } else {
+      return file;
+    }
   };
   reducer = function(acc, line) {
     var content, decomposed, file, initPos, k, key, leader, nextK, option, options, ref, ref1, slicedLine, value;
@@ -160,13 +168,17 @@ groupOptions = function(options) {
 };
 
 buildCompileArgs = function(optGroups, fullPath, defaultOutput) {
-  var flags, output;
+  var args, flags, output, ref;
   if (defaultOutput == null) {
     defaultOutput = fullPath + '.exe';
   }
-  flags = (optGroups['compile'] || ['-std=c++1y']).join(' ');
-  output = (optGroups['output'] || [defaultOutput])[0];
-  return [[fullPath, flags, '-o', output, '-fcolor-diagnostics'], output];
+  flags = optGroups['compile'] || ['-std=c++1y'];
+  output = ((ref = optGroups['output']) != null ? ref[0] : void 0) || defaultOutput;
+  flags = _.flatten(_.map(flags, function(flag) {
+    return flag.split(' ');
+  }));
+  args = [fullPath, '-o', output].concat(flags).concat(['-fcolor-diagnostics']);
+  return [args, output];
 };
 
 compileSync = function(optGroups, fullPath) {

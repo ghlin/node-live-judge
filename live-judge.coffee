@@ -15,8 +15,11 @@ program.version '0.0.1'
   .option '-w, --watchdir [dir]', 'watch dir', process.cwd()
   .parse process.argv
 
-compiler = program.compiler or 'g++'
-watchdir = program.watchdir or process.cwd()
+compiler = program.compiler
+watchdir = program.watchdir
+
+if watchdir[watchdir.length - 1] == '/'
+  watchdir = watchdir.slice 0, watchdir.length - 1
 
 # }}}
 
@@ -44,7 +47,11 @@ translate = (line) ->
 
 extractOptionsFromLines = (fullPath, lines) ->
   baseDir = path.dirname fullPath
-  fixPath = (file) -> baseDir + '/' + file
+  fixPath = (file) ->
+    if not path.isAbsolute
+      baseDir + '/' + file
+    else
+      file
 
   reducer = (acc, line) ->
     [options, k] = acc
@@ -97,7 +104,7 @@ extractOptionsFromLines = (fullPath, lines) ->
     if key == 'in' or key == 'out'
       if leader == ':' && value[0] == '@'
         file = fixPath value.slice 1
-        # TODO: use catch IO exceptions here.
+        # TODO: catch IO exceptions here.
         content = fs.readFileSync file, 'utf-8'
         options.push [key, content]
         return [options, {}]
@@ -156,10 +163,16 @@ groupOptions = (options) ->
 
 
 buildCompileArgs = (optGroups, fullPath, defaultOutput = fullPath + '.exe') ->
-  flags     = (optGroups['compile'] or ['-std=c++1y']).join ' '
-  output    = (optGroups['output']  or [defaultOutput])[0]
+  flags     = optGroups['compile']    or ['-std=c++1y']
+  output    = optGroups['output']?[0] or defaultOutput
 
-  [ [ fullPath, flags, '-o', output, '-fcolor-diagnostics' ], output ]
+  flags     = _.flatten _.map flags, (flag) -> flag.split ' '
+
+  args = [ fullPath, '-o', output ]
+    .concat flags
+    .concat [ '-fcolor-diagnostics' ]
+
+  [ args, output ]
 
 compileSync = (optGroups, fullPath) ->
   [args, output]   =   buildCompileArgs optGroups, fullPath
