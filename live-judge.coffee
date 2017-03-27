@@ -13,10 +13,12 @@ program       = require 'commander'
 program.version '0.0.1'
   .option '-c, --compiler [compiler]', 'set compiler', 'clang++'
   .option '-w, --watchdir [dir]', 'watch dir', process.cwd()
+  .option '-r, --run-only', 'run code only', false
   .parse process.argv
 
 compiler = program.compiler
 watchdir = program.watchdir
+runOnly  = program.runOnly
 
 if watchdir[watchdir.length - 1] == '/'
   watchdir = watchdir.slice 0, watchdir.length - 1
@@ -101,7 +103,7 @@ extractOptionsFromLines = (fullPath, lines) ->
 
     [ key, leader, value, initPos ] = decomposed
 
-    if key == 'in' or key == 'out'
+    if key == 'in' or key == 'out' or key == 'stdin'
       if leader == ':' && value[0] == '@'
         file = fixPath value.slice 1
         # TODO: catch IO exceptions here.
@@ -201,6 +203,10 @@ runTestSync = (execPath, testInput, testOutput) ->
   execProcess = spawnSync execPath, [],
     input: testInput
 
+  if not execProcess.status?
+    console.log "??? #{ require('util').inspect execProcess, depth: null }".red
+    return
+
   output = execProcess.stdout.toString 'utf-8'
 
   diff = diffLines output, testOutput, newLineIsToken: true
@@ -227,8 +233,13 @@ runTestSync = (execPath, testInput, testOutput) ->
   console.log "*** Process returned: #{ execProcess.status } at #{ new Date }"[color]
 
 
-runSync = (execPath) ->
-  execProcess = spawnSync execPath, []
+runSync = (execPath, input) ->
+  execProcess = spawnSync execPath, [],
+    input: input
+
+  if not execProcess.status?
+    console.log "??? #{ require('util').inspect execProcess, depth: null }".red
+    return
 
   process.stdout.write execProcess.stdout.toString 'utf-8'
   process.stdout.write (execProcess.stderr.toString 'utf-8').red
@@ -257,11 +268,15 @@ watcher.on 'all', (evt, fullPath) ->
 
   tests = extractTestings options
 
-  if tests.length != 0
+  if tests.length != 0 and not runOnly and not optGroups['run-only']?
     for testCase, i in tests
       console.log "*** Running test ##{ i + 1 }...".grey
 
       runTestSync output, testCase['in'], testCase['out']
   else
-    runSync output
+    inputs = optGroups['stdin'] or [""]
+    for input, i in inputs
+      console.log "*** Running with input ##{ i + 1 }...".grey
+
+      runSync output, input
 
